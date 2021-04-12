@@ -56,16 +56,11 @@ class NoteFinder:
         return files
 
     def find_notes(self) -> List[str]:
-        files = []
         res = execute_command(
-            ["fd", ".md", self.config.note_folder],
+            ["ls", "-t", self.config.note_folder],
         )
 
-        for line in res.split("\n"):
-            if line:
-                files.append(os.path.basename(line))
-
-        return files
+        return [line for line in res.split("\n") if line and line.endswith(".md")]
 
     @staticmethod
     def find_parent(note_name) -> Optional[str]:
