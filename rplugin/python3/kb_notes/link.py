@@ -45,7 +45,7 @@ class Link:
 
         for _, line, start, end in self.highlight.current_buffer_wiki_links:
             if line == line_position and start <= row_position <= end:
-                return self.app.nvim.current.line.encode()[start + 2:end - 2].decode()
+                return self.app.nvim.current.line.encode()[start + 2 : end - 2].decode()
 
         return None
 
