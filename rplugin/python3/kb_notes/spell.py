@@ -1,4 +1,5 @@
 from kb_notes.application import Application
+from kb_notes.config import SPELL_SUGGESTION_SINK
 
 
 class Spell:
@@ -17,7 +18,7 @@ class Spell:
                 "fzf#run",
                 {
                     "source": suggestions,
-                    "sink": "SpellSuggestionSink",
+                    "sink": SPELL_SUGGESTION_SINK,
                     "window": {"width": 0.4, "height": 0.4},
                 },
             )
