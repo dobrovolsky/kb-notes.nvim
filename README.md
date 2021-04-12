@@ -1,14 +1,17 @@
-# KB Notes
+# kb-notes.nvim
 
 Yet another note management system for neovim.
+
+Inspired [Dendron](https://wiki.dendron.so/)
 
 Supports:
 
 - linking notes with `[[note-name]]`
+- highlighting existing and not existing links
 - discovering backlinks
-- hierarchy in notes using `.` Example: `aws`, `aws.ec2`, `aws.ec2.security-groups`
-  See [Dendron](https://wiki.dendron.so/notes/c6fd6bc4-7f75-4cbb-8f34-f7b99bfe2d50.html#hierarchies)
 - note renaming, updates backlinks, child notes
+- [deoplete](https://github.com/Shougo/deoplete.nvim) integration
+- hierarchy in notes using `.` Example: `aws`, `aws.ec2`, `aws.ec2.security-groups`
 
 ## Installation
 
