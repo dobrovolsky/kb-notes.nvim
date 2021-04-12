@@ -2,7 +2,7 @@
 
 Yet another note management system for neovim.
 
-Inspired [Dendron](https://wiki.dendron.so/)
+Inspired by [Dendron](https://wiki.dendron.so/)
 
 Supports:
 
