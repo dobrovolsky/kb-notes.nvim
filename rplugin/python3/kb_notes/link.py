@@ -57,7 +57,8 @@ class Link:
         }
 
         if parent := self.app.note_finder.find_parent(current_note_name(self.app.nvim)):
-            source.add(f"{parent}.md")
+            if os.path.isfile(self.app.note_finder.get_full_path_for_note(parent)):
+                source.add(f"{parent}.md")
 
         fzf_with_preview(
             nvim=self.app.nvim,

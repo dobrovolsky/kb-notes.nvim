@@ -28,7 +28,7 @@ class NoteFinder:
                 "rg",
                 "-l",
                 "-e",
-                f"\[\[{note_name}\]\]",
+                f"\\[\\[{note_name}\\]\\]",
                 self.config.note_folder,
             ],
         )
@@ -44,7 +44,7 @@ class NoteFinder:
         res = execute_command(
             [
                 "fd",
-                f"{note_name}.[^md]",
+                f"^{note_name}[.][^md]",
                 self.config.note_folder,
             ],
         )

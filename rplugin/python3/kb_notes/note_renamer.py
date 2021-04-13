@@ -16,13 +16,16 @@ class NoteRenamer:
             for file in self.app.note_finder.find_children(old_note_name)
         ]
         new_children_note = [
-            note.replace(old_note_name, new_note_name) for note in children_note
+            note.replace(old_note_name, new_note_name, 1) for note in children_note
         ]
 
         existing_files = []
         for note in new_children_note:
             if os.path.isfile(self.app.note_finder.get_full_path_for_note(note)):
                 existing_files.append(note)
+
+        if os.path.isfile(self.app.note_finder.get_full_path_for_note(new_note_name)):
+            existing_files.append(new_note_name)
 
         if existing_files:
             raise NoteExists(existing_files)

@@ -79,4 +79,7 @@ def char_after_cursor(nvim: Nvim) -> str:
 
 
 def execute_command(command: List[str]) -> str:
-    return subprocess.check_output(command).decode()
+    try:
+        return subprocess.check_output(command).decode()
+    except subprocess.CalledProcessError:
+        return ""
