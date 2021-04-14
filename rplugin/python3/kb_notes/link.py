@@ -100,6 +100,7 @@ class Link:
 
         with disable_deoplete(self.app.nvim):
             self.app.nvim.feedkeys(f"a[[{note_name}]]")
+            self.app.nvim.command("stopinsert")
 
     def link_suggestion_sink_find_note_and_replace(self, args):
         file_name = "".join(args)
@@ -111,6 +112,7 @@ class Link:
 
         with disable_deoplete(self.app.nvim):
             self.app.nvim.feedkeys(f'"_ci[{note_name}')
+            self.app.nvim.command("stopinsert")
 
     def link_suggestion(self):
         if self.highlight.is_wikilink_under_cursor:
