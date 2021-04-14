@@ -22,7 +22,10 @@ from kb_notes.config import (
     LINK_SUGGESTION_SINK_FIND_AND_REPLACE_NOTE,
     LINK_SUGGESTION_SINK_INSERT_NOTE,
 )
-from kb_notes.note_renamer import NoteRenamer
+from kb_notes.note_renamer import (
+    NoteRenamer,
+    RenameNote,
+)
 
 
 class Link:
@@ -149,8 +152,17 @@ class Link:
             self.app.nvim.out_write(f"{e}\n")
             return
 
-        self.note_renamer.rename_note(current_note_name(self.app.nvim), new_note_name)
+        renamed = self.note_renamer.rename_note(
+            RenameNote(
+                old_note_name=current_note_name(self.app.nvim),
+                new_note_name=new_note_name,
+            )
+        )
         self.app.nvim.command(
             f"e {self.app.note_finder.get_full_path_for_note(new_note_name)}"
         )
-        self.app.nvim.out_write("Renamed\n")
+        message = ""
+        for note in renamed:
+            message += f"{note.old_note_name} -> {note.new_note_name}\n"
+
+        self.app.nvim.command(f"echo '{message}'")
