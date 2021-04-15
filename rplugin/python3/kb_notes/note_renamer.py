@@ -5,10 +5,14 @@ from typing import (
     List,
 )
 
+from pynvim import NvimError
+
 from kb_notes.application import Application
 from kb_notes.exeptions import NoteExists
 
 from typing import NamedTuple
+
+from kb_notes.helpers import current_note_name
 
 
 class RenameNote(NamedTuple):
@@ -19,6 +23,30 @@ class RenameNote(NamedTuple):
 class NoteRenamer:
     def __init__(self, app: Application):
         self.app = app
+
+    def command_rename_note(self):
+        try:
+            new_note_name = self.app.nvim.eval(
+                f"input('Enter note name: ', '{current_note_name(self.app.nvim)}')"
+            )
+        except NvimError as e:
+            self.app.nvim.out_write(f"{e}\n")
+            return
+
+        renamed = self.rename_note(
+            RenameNote(
+                old_note_name=current_note_name(self.app.nvim),
+                new_note_name=new_note_name,
+            )
+        )
+        self.app.nvim.command(
+            f"e {self.app.note_finder.get_full_path_for_note(new_note_name)}"
+        )
+        message = ""
+        for note in renamed:
+            message += f"{note.old_note_name} -> {note.new_note_name}\n"
+
+        self.app.nvim.command(f"echo '{message}'")
 
     def rename_note(self, rename_note: RenameNote) -> List[RenameNote]:
         children_note = [

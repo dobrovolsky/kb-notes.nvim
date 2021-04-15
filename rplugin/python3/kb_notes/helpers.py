@@ -2,7 +2,6 @@ import os
 import subprocess
 from contextlib import contextmanager
 from typing import (
-    Optional,
     ContextManager,
     Generator,
     List,
@@ -39,35 +38,6 @@ def disable_deoplete(nvim: Nvim) -> ContextManager[None]:
         yield
     finally:
         nvim.call("deoplete#enable")
-
-
-def fzf_with_preview(
-    nvim: Nvim,
-    source: list,
-    sink: str,
-    location: str,
-    search_term: Optional[str] = None,
-):
-    if search_term is not None:
-        options = f"-q {search_term}"
-    else:
-        options = ""
-
-    nvim.call(
-        "fzf#run",
-        nvim.call(
-            "fzf#wrap",
-            nvim.call(
-                "fzf#vim#with_preview",
-                {
-                    "source": source,
-                    "sink": sink,
-                    "dir": location,
-                    "options": options,
-                },
-            ),
-        ),
-    )
 
 
 def char_under_cursor(nvim: Nvim) -> str:

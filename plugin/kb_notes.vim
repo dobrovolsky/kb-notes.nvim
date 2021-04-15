@@ -1,9 +1,10 @@
+let $KB_NOTES_SOURCE = g:kb_notes_path
+
+let g:kb_notes_fzf_options = get(g:, 'kb_notes_fzf_options', "--bind='ctrl-e:toggle-preview' --preview 'bat --color=always " . g:kb_notes_path . "/{}.md'")
+
 if exists("g:loaded_kb")
   finish
 endif
-let g:loaded_kb = 1
-
-let $KB_NOTES_SOURCE = g:kb_notes_path
 
 " define autocmd for plugin
 augroup KbGroup
@@ -22,3 +23,5 @@ function! s:load_kb_settings()
     call FuncRef()
   endif
 endfunction
+
+let g:loaded_kb = 1

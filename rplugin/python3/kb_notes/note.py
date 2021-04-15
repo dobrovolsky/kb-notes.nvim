@@ -9,18 +9,24 @@ from pynvim import (
 from kb_notes.application import Application
 from kb_notes.helpers import (
     buffer_is_empty,
-    fzf_with_preview,
     current_note_name,
 )
 from kb_notes.config import (
     ALLOWED_CHARS_PATTERN,
     DEFAULT_SEPARATOR,
+    OPEN_NOTE_SINK,
 )
+from kb_notes.preview import Preview
 
 
 class Note:
-    def __init__(self, app: Application):
+    def __init__(
+        self,
+        app: Application,
+        preview: Preview,
+    ):
         self.app = app
+        self.preview = preview
 
     @staticmethod
     def slugify(text: str) -> str:
@@ -34,7 +40,7 @@ class Note:
         note_content = self.app.config.template.format(note_name=note_name)
         self.app.nvim.current.buffer[:] = note_content.split("\n")
 
-    def new_note(self):
+    def command_new_note(self):
         try:
             note_name = self.app.nvim.eval(
                 f"input('Enter note name: ', '{current_note_name(self.app.nvim)}')"
@@ -56,25 +62,23 @@ class Note:
             self.insert_template(note_name_normalized)
             self.app.nvim.command("w")
 
-    def random_note(self):
+    def command_random_note(self):
         note_file = random.choice(self.app.note_finder.find_notes())
         self.app.nvim.command(
             f"e {self.app.note_finder.get_full_path_for_note(note_file)}"
         )
 
-    def search_note(self):
-        fzf_with_preview(
-            nvim=self.app.nvim,
+    def command_search_note(self):
+        self.preview.fzf_with_preview(
             source=self.app.note_finder.find_notes(),
-            sink="e",
+            sink=OPEN_NOTE_SINK,
             location=self.app.config.note_folder,
         )
 
-    def search_note_with_prefix(self):
-        fzf_with_preview(
-            nvim=self.app.nvim,
+    def command_search_note_with_prefix(self):
+        self.preview.fzf_with_preview(
             source=self.app.note_finder.find_notes(),
-            sink="e",
+            sink=OPEN_NOTE_SINK,
             location=self.app.config.note_folder,
             search_term=f"^{current_note_name(self.app.nvim)}",
         )

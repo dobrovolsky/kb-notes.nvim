@@ -21,6 +21,9 @@ class NoteFinder:
     ):
         return os.path.join(self.config.note_folder, note_name) + ".md"
 
+    def get_note_name(self, path):
+        return os.path.splitext(os.path.basename(path))[0]
+
     def find_backlinks(self, note_name: str) -> List[str]:
         backlinks_files = []
         backlinks = execute_command(
@@ -35,7 +38,7 @@ class NoteFinder:
 
         for line in backlinks.split("\n"):
             if line:
-                backlinks_files.append(os.path.basename(line))
+                backlinks_files.append(self.get_note_name(line))
 
         return backlinks_files
 
@@ -51,7 +54,7 @@ class NoteFinder:
 
         for line in res.split("\n"):
             if line:
-                files.append(os.path.basename(line))
+                files.append(self.get_note_name(line))
 
         return files
 
@@ -59,8 +62,11 @@ class NoteFinder:
         res = execute_command(
             ["ls", "-t", self.config.note_folder],
         )
-
-        return [line for line in res.split("\n") if line and line.endswith(".md")]
+        return [
+            self.get_note_name(line)
+            for line in res.split("\n")
+            if line and line.endswith(".md")
+        ]
 
     @staticmethod
     def find_parent(note_name) -> Optional[str]:
@@ -77,4 +83,4 @@ class NoteFinder:
         for line in lines:
             current_buffer_links += WIKILINK_PATTERN.findall(line)
 
-        return [link + ".md" for link in current_buffer_links]
+        return current_buffer_links

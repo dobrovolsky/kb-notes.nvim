@@ -3,15 +3,10 @@ from typing import (
     Optional,
 )
 
-from pynvim import (
-    NvimError,
-)
-
 from kb_notes.application import Application
 from kb_notes.helpers import (
     buffer_is_empty,
     disable_deoplete,
-    fzf_with_preview,
     char_under_cursor,
     char_after_cursor,
     current_note_name,
@@ -21,11 +16,9 @@ from kb_notes.note import Note
 from kb_notes.config import (
     LINK_SUGGESTION_SINK_FIND_AND_REPLACE_NOTE,
     LINK_SUGGESTION_SINK_INSERT_NOTE,
+    OPEN_NOTE_SINK,
 )
-from kb_notes.note_renamer import (
-    NoteRenamer,
-    RenameNote,
-)
+from kb_notes.preview import Preview
 
 
 class Link:
@@ -34,12 +27,12 @@ class Link:
         app: Application,
         highlight: Highlight,
         note: Note,
-        note_renamer: NoteRenamer,
+        preview: Preview,
     ):
         self.app = app
         self.highlight = highlight
         self.note = note
-        self.note_renamer = note_renamer
+        self.preview = preview
 
     def get_note_name_under_cursor(self) -> Optional[str]:
         cursor_position = self.app.nvim.current.window.cursor
@@ -52,7 +45,14 @@ class Link:
 
         return None
 
-    def get_links(self):
+    def command_open_note_sink(self, args):
+        note_name = "".join(args)
+
+        self.app.nvim.command(
+            f"e {self.app.note_finder.get_full_path_for_note(note_name)}"
+        )
+
+    def command_get_links(self):
         source = {
             *self.app.note_finder.find_backlinks(current_note_name(self.app.nvim)),
             *self.app.note_finder.find_children(current_note_name(self.app.nvim)),
@@ -61,12 +61,11 @@ class Link:
 
         if parent := self.app.note_finder.find_parent(current_note_name(self.app.nvim)):
             if os.path.isfile(self.app.note_finder.get_full_path_for_note(parent)):
-                source.add(f"{parent}.md")
+                source.add(parent)
 
-        fzf_with_preview(
-            nvim=self.app.nvim,
+        self.preview.fzf_with_preview(
             source=sorted(source),
-            sink="e",
+            sink=OPEN_NOTE_SINK,
             location=self.app.config.note_folder,
         )
 
@@ -82,7 +81,7 @@ class Link:
             # New file is created, link in previous buffer should be marked as existing
             self.highlight.get_highlights.cache_clear()
 
-    def open_link(self):
+    def command_open_link(self):
         if self.highlight.is_wikilink_under_cursor:
             note_name = self.get_note_name_under_cursor()
             self.open_note(note_name)
@@ -97,17 +96,15 @@ class Link:
             if self.highlight.is_url_under_cursor:
                 self.app.nvim.feedkeys("gx")
 
-    def link_suggestion_sink_insert_note(self, args):
-        file_name = "".join(args)
-        note_name = os.path.splitext(file_name)[0]
+    def command_link_suggestion_sink_insert_note(self, args):
+        note_name = "".join(args)
 
         with disable_deoplete(self.app.nvim):
             self.app.nvim.feedkeys(f"a[[{note_name}]]")
             self.app.nvim.command("stopinsert")
 
-    def link_suggestion_sink_find_note_and_replace(self, args):
-        file_name = "".join(args)
-        note_name = os.path.splitext(file_name)[0]
+    def command_link_suggestion_sink_find_note_and_replace(self, args):
+        note_name = "".join(args)
 
         if char_under_cursor(self.app.nvim) == "[" and char_after_cursor(self.app.nvim):
             # if fist bracket
@@ -117,7 +114,7 @@ class Link:
             self.app.nvim.feedkeys(f'"_ci[{note_name}')
             self.app.nvim.command("stopinsert")
 
-    def link_suggestion(self):
+    def command_link_suggestion(self):
         if self.highlight.is_wikilink_under_cursor:
             note_name = self.get_note_name_under_cursor()
 
@@ -126,15 +123,14 @@ class Link:
             note_name = None
             sink = LINK_SUGGESTION_SINK_INSERT_NOTE
 
-        fzf_with_preview(
-            nvim=self.app.nvim,
+        self.preview.fzf_with_preview(
             source=self.app.note_finder.find_notes(),
             sink=sink,
             location=self.app.config.note_folder,
             search_term=note_name,
         )
 
-    def go_to_parent_note(self):
+    def command_go_to_parent_note(self):
         parent_note = self.app.note_finder.find_parent(current_note_name(self.app.nvim))
 
         if not parent_note:
@@ -142,27 +138,3 @@ class Link:
             return
 
         self.open_note(parent_note)
-
-    def rename_note(self):
-        try:
-            new_note_name = self.app.nvim.eval(
-                f"input('Enter note name: ', '{current_note_name(self.app.nvim)}')"
-            )
-        except NvimError as e:
-            self.app.nvim.out_write(f"{e}\n")
-            return
-
-        renamed = self.note_renamer.rename_note(
-            RenameNote(
-                old_note_name=current_note_name(self.app.nvim),
-                new_note_name=new_note_name,
-            )
-        )
-        self.app.nvim.command(
-            f"e {self.app.note_finder.get_full_path_for_note(new_note_name)}"
-        )
-        message = ""
-        for note in renamed:
-            message += f"{note.old_note_name} -> {note.new_note_name}\n"
-
-        self.app.nvim.command(f"echo '{message}'")

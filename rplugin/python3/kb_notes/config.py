@@ -24,6 +24,8 @@ LINK_SUGGESTION_SINK_INSERT_NOTE = "KBLinkSuggestionSinkInsertNote"
 
 SPELL_SUGGESTION_SINK = "KBSpellSuggestionSink"
 
+OPEN_NOTE_SINK = "KBOpenNoteSink"
+
 
 class Config:
     def __init__(self, nvim: Nvim):
@@ -47,3 +49,7 @@ class Config:
                 template = f.read()
 
         return template
+
+    @property
+    def fzf_options(self):
+        return self.nvim.eval("g:kb_notes_fzf_options")

@@ -53,21 +53,20 @@ class Highlight:
 
         return highlights
 
-    def highlight_wikilinks(self):
+    def command_highlight_wikilinks(self):
         buf = self.app.nvim.current.buffer
 
         highlights = []
 
-        for file in self.app.note_finder.find_links_in_lines(
+        for note in self.app.note_finder.find_links_in_lines(
             self.app.nvim.current.buffer
         ):
-            note_name = os.path.splitext(file)[0]
 
             for line, text in enumerate(buf):
                 highlights += self.get_highlights(
                     line=line,
                     text=text,
-                    note_name=note_name,
+                    note_name=note,
                 )
 
         if highlights:

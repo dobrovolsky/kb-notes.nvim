@@ -47,13 +47,43 @@ map <leader>kb :KBGetLinks<cr>
 
 ## Settings
 
-`g:kb_notes_path` - path to your notes.
+#### Note path
 
-`g:kb_notes_template_path` - override default template for new note.
+`g:kb_notes_path`
 
-String `{note_name}` will be replaced with note name
+Change path to your notes
 
-`g:kb_note_post_init` - allows you to execute function as callback when note loaded in buffer.
+```viml
+let g:kb_notes_path=expand('~/notes')
+```
+
+#### Template
+
+`g:kb_notes_template_path`
+
+Override default template for new note.
+
+```viml
+let g:kb_notes_template_path=expand('~/notes/templates/main.md')
+```
+
+Pattern `{note_name}` will be replaced with note name
+
+#### FZF options
+
+`g:kb_notes_fzf_options`
+
+Define your own options for fzf preview window
+
+```viml
+let g:kb_notes_fzf_options="--bind='ctrl-e:toggle-preview' --preview 'bat --color=always" . g:kb_notes_path . "{}.md'"
+```
+
+#### Post init hook
+
+`g:kb_note_post_init`
+
+Allows you to execute function as callback when note loaded in buffer.
 
 Can be used to define `<buffer>` related mappings and local settings
 
