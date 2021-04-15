@@ -16,7 +16,7 @@ augroup END
 
 function! s:load_kb_settings()
   " OpenLink uses this command
-  syntax match wikiLink /\[\[.\{-}\]\]/ containedin=mkdNonListItemBlock,mkdListItemLine
+  syntax match wikiLink /\[\[.\{-}\]\]/ containedin=mkdNonListItemBlock,mkdListItemLine,htmlH1,htmlH2,htmlH3,htmlH4,htmlH5,htmlH6
 
   if exists("g:kb_note_post_init")
     let FuncRef = function(g:kb_note_post_init)
