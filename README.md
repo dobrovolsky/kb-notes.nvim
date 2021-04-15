@@ -76,7 +76,7 @@ Pattern `{note_name}` will be replaced with note name
 Define your own options for fzf preview window
 
 ```viml
-let g:kb_notes_fzf_options="--bind='ctrl-e:toggle-preview' --preview 'bat --color=always" . g:kb_notes_path . "{}.md'"
+let g:kb_notes_fzf_options="--bind='ctrl-e:toggle-preview' --preview 'bat --color=always " . g:kb_notes_path . "/{}.md'"
 ```
 
 #### Post init hook
