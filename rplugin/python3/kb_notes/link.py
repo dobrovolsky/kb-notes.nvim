@@ -1,3 +1,4 @@
+import itertools
 import os
 from typing import (
     Optional,
@@ -95,6 +96,8 @@ class Link:
 
             if self.highlight.is_url_under_cursor:
                 self.app.nvim.feedkeys("gx")
+            else:
+                self.app.nvim.out_write("No link under cursor\n")
 
     def command_link_suggestion_sink_insert_note(self, args):
         note_name = "".join(args)
@@ -138,3 +141,26 @@ class Link:
             return
 
         self.open_note(parent_note)
+
+    def command_show_connected_notes_for_link(self):
+        note = self.get_note_name_under_cursor()
+        if not note:
+            self.app.nvim.out_write("No link under cursor\n")
+            return
+
+        if os.path.isfile(self.app.note_finder.get_full_path_for_note(note)):
+            with open(self.app.note_finder.get_full_path_for_note(note)) as f:
+                note_content = f.readlines()
+        else:
+            note_content = []
+
+        self.preview.fzf_with_preview(
+            source=[
+                *([note] if note_content else []),
+                *self.app.note_finder.find_backlinks(note),
+                *self.app.note_finder.find_children(note),
+                *self.app.note_finder.find_links_in_lines(note_content),
+            ],
+            sink=OPEN_NOTE_SINK,
+            location=self.app.config.note_folder,
+        )

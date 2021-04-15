@@ -61,6 +61,10 @@ class NotesPlugin:
     def go_up(self):
         self.link.command_go_to_parent_note()
 
+    @pynvim.command("KBShowConnectedNotesForLink")
+    def go_up(self):
+        self.link.command_show_connected_notes_for_link()
+
     #############################################################
     # Notes
     #############################################################

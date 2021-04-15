@@ -121,6 +121,7 @@ endfunction
 - `KBSearchNote` - initiates search of notes
 - `KBSearchNoteWithPrefix` - initiates search with current note name as query
 - `KBOpenLink` - follows via wikilink reference or markdown url
+- `KBShowConnectedNotesForLink` - finds links for link under cursor (links from current file, backlinks, children notes)
 - `KBGetLinks` - finds all connected notes (links from current file, backlinks, children notes)
 - `KBGoToParentNote` - navigates to parent note
 - `KBLinkSuggestion` - inserts wikilink
