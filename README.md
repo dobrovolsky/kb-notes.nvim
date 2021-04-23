@@ -6,7 +6,9 @@ Inspired by [Dendron](https://wiki.dendron.so/)
 
 Supports:
 
-- linking notes with `[[note-name]]`
+- linking notes with `[[note-name]]`. Also supports:
+  - pipes: `[[note-name|note alias]]` - follow a link and ignores alias.
+  - block reference: `[[note-name#Reference text]]` - follow a link and performs search for `Reference text`
 - highlighting existing and not existing links
 - discovering backlinks
 - note renaming, updates backlinks, child notes

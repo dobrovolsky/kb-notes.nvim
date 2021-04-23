@@ -8,16 +8,11 @@ from typing import (
 from pynvim import NvimError
 
 from kb_notes.application import Application
+from kb_notes.config import WIKILINK_PATTERN
 from kb_notes.exeptions import NoteExists
 
-from typing import NamedTuple
-
 from kb_notes.helpers import current_note_name
-
-
-class RenameNote(NamedTuple):
-    old_note_name: str
-    new_note_name: str
+from kb_notes.types import RenameNote
 
 
 class NoteRenamer:
@@ -42,6 +37,10 @@ class NoteRenamer:
         self.app.nvim.command(
             f"e {self.app.note_finder.get_full_path_for_note(new_note_name)}"
         )
+
+        # close all buffers but not current one
+        self.app.nvim.command(":w | %bd | e#")
+
         message = ""
         for note in renamed:
             message += f"{note.old_note_name} -> {note.new_note_name}\n"
@@ -98,10 +97,15 @@ class NoteRenamer:
                 inplace=True,
             ) as f:
                 for line in f:
-                    line = line.replace(
-                        f"[[{rename_note.old_note_name}]]",
-                        f"[[{rename_note.new_note_name}]]",
-                    )
+                    for link in WIKILINK_PATTERN.finditer(line):
+                        if link["note"] == rename_note.old_note_name:
+                            old_note_full = link.string[link.start() : link.end()]
+                            new_note_full = old_note_full.replace(
+                                rename_note.old_note_name, rename_note.new_note_name
+                            )
+
+                            line = line.replace(old_note_full, new_note_full)
+
                     sys.stdout.write(line)
 
     def _update_title(self, rename_note: RenameNote):

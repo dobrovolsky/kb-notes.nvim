@@ -9,6 +9,7 @@ from kb_notes.config import (
     WIKILINK_PATTERN,
 )
 from kb_notes.helpers import execute_command
+from kb_notes.types import WikiLinkRegexMatch
 
 
 class NoteFinder:
@@ -31,7 +32,7 @@ class NoteFinder:
                 "rg",
                 "-l",
                 "-e",
-                f"\\[\\[{note_name}\\]\\]",
+                f"\\[\\[{note_name}(#)?([-a-zA-Z0-9\\.\\s]*)?(\\|)?([-a-zA-Z0-9\\.\\s]*)?(\\^)?([-a-zA-Z0-9\\.\\s]*)\\]\\]",
                 self.config.note_folder,
             ],
         )
@@ -47,14 +48,16 @@ class NoteFinder:
         res = execute_command(
             [
                 "fd",
-                f"^{note_name}[.][^md]",
+                f"^{note_name}",
                 self.config.note_folder,
             ],
         )
 
         for line in res.split("\n"):
             if line:
-                files.append(self.get_note_name(line))
+                note = self.get_note_name(line)
+                if note != note_name:
+                    files.append(note)
 
         return files
 
@@ -78,9 +81,17 @@ class NoteFinder:
         return ".".join(hierarchy[:-1])
 
     @staticmethod
-    def find_links_in_lines(lines: List[str]) -> List[str]:
+    def find_links_in_lines(lines: List[str]) -> List[WikiLinkRegexMatch]:
         current_buffer_links = []
         for line in lines:
-            current_buffer_links += WIKILINK_PATTERN.findall(line)
-
+            for link in WIKILINK_PATTERN.finditer(line):
+                current_buffer_links.append(
+                    WikiLinkRegexMatch(
+                        name=link["note"],
+                        reference=link["reference"],
+                        alias=link["alias"],
+                        block_reference=link["block_reference"],
+                        original=link.string[link.start() : link.end()],
+                    )
+                )
         return current_buffer_links

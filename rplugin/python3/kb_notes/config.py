@@ -7,7 +7,9 @@ from pynvim import (
 
 from kb_notes.exeptions import PathIsNotDefined
 
-WIKILINK_PATTERN = re.compile(r"\[\[([-a-z0-9\.]*)\]\]")
+WIKILINK_PATTERN = re.compile(
+    r"\[\[(?P<note>[-a-z0-9\.]*)(#)?(?P<reference>[-a-zA-Z0-9\.\s]*)?(\|)?(?P<alias>[-a-zA-Z0-9\.\s]*)?(\^)?(?P<block_reference>[-a-zA-Z0-9\.\s]*)?\]\]"
+)
 WIKILINK_HIGHLIGHT_GROUP = "wikiLink"
 URL_LINK_HIGHLIGHT_GROUPS = {"mkdURL", "mkdLink"}
 ALLOWED_CHARS_PATTERN = re.compile(r"[^-a-z0-9\.]+")

@@ -13,6 +13,7 @@ from kb_notes.config import (
     WIKILINK_HIGHLIGHT_GROUP,
     URL_LINK_HIGHLIGHT_GROUPS,
 )
+from kb_notes.types import WikiLinkRegexMatch
 
 
 class Highlight:
@@ -35,15 +36,15 @@ class Highlight:
         return self.highlightgroup_under_cursor in URL_LINK_HIGHLIGHT_GROUPS
 
     @lru_cache(maxsize=4096)
-    def get_highlights(self, line: int, text: str, note_name: str):
-        wikilink = f"[[{note_name}]]".encode()
+    def get_highlights(self, line: int, text: str, note_match: WikiLinkRegexMatch):
+        wikilink = note_match.original.encode()
         highlights = []
 
         for start in find_all(text.encode(), wikilink):
             end = start + len(wikilink)
 
             if os.path.isfile(
-                self.app.note_finder.get_full_path_for_note(note_name=note_name)
+                self.app.note_finder.get_full_path_for_note(note_name=note_match.name)
             ):
                 highlight_name = WIKILINK_EXISTS
             else:
@@ -66,7 +67,7 @@ class Highlight:
                 highlights += self.get_highlights(
                     line=line,
                     text=text,
-                    note_name=note,
+                    note_match=note,
                 )
 
         if highlights:
