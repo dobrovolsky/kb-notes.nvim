@@ -3,6 +3,21 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project DOES NOT adhere
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.3
+
+### Added:
+
+- Add caching for deoplate input
+
+### Changed:
+
+- Use `matcher_full_fuzzy` for finding notes with deoplate
+- Show deoplate panel right after `[[` is typed
+
+### Fixed
+
+- Note insertion with deoplate plugin
+
 ## 0.0.2
 
 ### Added:
