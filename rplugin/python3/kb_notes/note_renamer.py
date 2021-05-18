@@ -48,10 +48,7 @@ class NoteRenamer:
         self.app.nvim.command(f"echo '{message}'")
 
     def rename_note(self, rename_note: RenameNote) -> List[RenameNote]:
-        children_note = [
-            file.replace(".md", "")
-            for file in self.app.note_finder.find_children(rename_note.old_note_name)
-        ]
+        children_note = self.app.note_finder.find_children(rename_note.old_note_name)
         new_children_note = [
             note.replace(rename_note.old_note_name, rename_note.new_note_name, 1)
             for note in children_note

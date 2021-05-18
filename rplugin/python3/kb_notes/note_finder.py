@@ -48,7 +48,7 @@ class NoteFinder:
         res = execute_command(
             [
                 "fd",
-                f"^{note_name}",
+                f"^{note_name}[.][^md]",
                 self.config.note_folder,
             ],
         )
@@ -56,8 +56,7 @@ class NoteFinder:
         for line in res.split("\n"):
             if line:
                 note = self.get_note_name(line)
-                if note != note_name:
-                    files.append(note)
+                files.append(note)
 
         return files
 
