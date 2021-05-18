@@ -76,7 +76,9 @@ class Link:
             ),
         }
 
-        if parent := self.app.note_finder.find_parent(current_note_name(self.app.nvim)):
+        for parent in self.app.note_finder.get_parent_notes_hierarchy(
+            current_note_name(self.app.nvim)
+        ):
             if os.path.isfile(self.app.note_finder.get_full_path_for_note(parent)):
                 source.add(parent)
 

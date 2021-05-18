@@ -32,7 +32,7 @@ class NoteFinder:
                 "rg",
                 "-l",
                 "-e",
-                f"\\[\\[{note_name}(#)?([-a-zA-Z0-9\\.\\s]*)?(\\|)?([-a-zA-Z0-9\\.\\s]*)?(\\^)?([-a-zA-Z0-9\\.\\s]*)\\]\\]",
+                f"\\[\\[{note_name}(#([-a-zA-Z0-9\\.\\s]*))?(\\|([-a-zA-Z0-9\\.\\s]*))?(\\^([-a-zA-Z0-9\\.\\s]*))?\\]\\]",
                 self.config.note_folder,
             ],
         )
@@ -70,14 +70,23 @@ class NoteFinder:
             if line and line.endswith(".md")
         ]
 
-    @staticmethod
-    def find_parent(note_name) -> Optional[str]:
-        hierarchy = note_name.split(".")
+    def find_parent(self, note_name: str) -> Optional[str]:
+        hierarchy = self.get_parent_notes_hierarchy(note_name)
 
-        if len(hierarchy) < 2:
+        if not hierarchy:
             return
 
-        return ".".join(hierarchy[:-1])
+        return hierarchy[-1]
+
+    @staticmethod
+    def get_parent_notes_hierarchy(note_name: str) -> List[str]:
+        hierarchy = note_name.split(".")[:-1]
+
+        res = []
+        for i, _ in enumerate(hierarchy, start=1):
+            res.append(".".join(hierarchy[:i]))
+
+        return res
 
     @staticmethod
     def find_links_in_lines(lines: List[str]) -> List[WikiLinkRegexMatch]:
