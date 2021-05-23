@@ -78,6 +78,14 @@ class NoteFinder:
 
         return hierarchy[-1]
 
+    def get_not_existing_parents(self, note_name: str) -> List[str]:
+        not_existing_parents = []
+        for parent in self.get_parent_notes_hierarchy(note_name):
+            if not os.path.isfile(self.get_full_path_for_note(parent)):
+                not_existing_parents.append(parent)
+
+        return not_existing_parents
+
     @staticmethod
     def get_parent_notes_hierarchy(note_name: str) -> List[str]:
         hierarchy = note_name.split(".")[:-1]

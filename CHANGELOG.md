@@ -3,6 +3,12 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project DOES NOT adhere
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.7
+
+### Added:
+
+- Show dialog to inform user if parent note doesn't exist for create new note and rename actions
+
 ## 0.0.6
 
 ### Fixed:

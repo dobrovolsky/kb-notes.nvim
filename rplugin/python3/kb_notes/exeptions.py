@@ -6,6 +6,14 @@ class NoteExists(ApplicationException):
     ...
 
 
+class InputError(ApplicationException):
+    ...
+
+
+class ActionAborted(ApplicationException):
+    ...
+
+
 class PathIsNotDefined(ApplicationException):
     def __init__(self):
         super().__init__(

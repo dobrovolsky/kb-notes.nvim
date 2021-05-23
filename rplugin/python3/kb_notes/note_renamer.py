@@ -5,15 +5,19 @@ from typing import (
     List,
 )
 
-from pynvim import NvimError
 
 from kb_notes.application import Application
 from kb_notes.config import WIKILINK_PATTERN
-from kb_notes.exeptions import NoteExists
+from kb_notes.exeptions import (
+    NoteExists,
+    ActionAborted,
+)
 
 from kb_notes.helpers import (
     current_note_name,
     slugify,
+    capture_input,
+    confirm_action,
 )
 from kb_notes.types import RenameNote
 
@@ -23,15 +27,27 @@ class NoteRenamer:
         self.app = app
 
     def command_rename_note(self):
-        try:
-            new_note_name = self.app.nvim.eval(
-                f"input('Enter note name: ', '{current_note_name(self.app.nvim)}')"
-            )
-        except NvimError as e:
-            self.app.nvim.out_write(f"{e}\n")
-            return
+        new_note_name = capture_input(
+            self.app.nvim, "Enter note name: ", default=current_note_name(self.app.nvim)
+        )
+
+        if not new_note_name:
+            raise ActionAborted
 
         new_note_name_normalized = slugify(new_note_name)
+
+        not_existing_parents = self.app.note_finder.get_not_existing_parents(
+            new_note_name_normalized
+        )
+        if not_existing_parents:
+            confirmed = confirm_action(
+                self.app.nvim,
+                f"Notes: [{', '.join(not_existing_parents)}] do not exist",
+            )
+            if not confirmed:
+                raise ActionAborted
+
+        self.app.nvim.command("w")
 
         renamed = self.rename_note(
             RenameNote(
@@ -44,7 +60,7 @@ class NoteRenamer:
         )
 
         # close all buffers but not current one
-        self.app.nvim.command(":w | %bd | e#")
+        self.app.nvim.command("w | %bd | e#")
 
         message = ""
         for note in renamed:
