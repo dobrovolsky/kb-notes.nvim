@@ -11,7 +11,10 @@ from kb_notes.application import Application
 from kb_notes.config import WIKILINK_PATTERN
 from kb_notes.exeptions import NoteExists
 
-from kb_notes.helpers import current_note_name
+from kb_notes.helpers import (
+    current_note_name,
+    slugify,
+)
 from kb_notes.types import RenameNote
 
 
@@ -28,14 +31,16 @@ class NoteRenamer:
             self.app.nvim.out_write(f"{e}\n")
             return
 
+        new_note_name_normalized = slugify(new_note_name)
+
         renamed = self.rename_note(
             RenameNote(
                 old_note_name=current_note_name(self.app.nvim),
-                new_note_name=new_note_name,
+                new_note_name=new_note_name_normalized,
             )
         )
         self.app.nvim.command(
-            f"e {self.app.note_finder.get_full_path_for_note(new_note_name)}"
+            f"e {self.app.note_finder.get_full_path_for_note(new_note_name_normalized)}"
         )
 
         # close all buffers but not current one

@@ -1,6 +1,4 @@
 import random
-import re
-import unicodedata
 
 from pynvim import (
     NvimError,
@@ -10,10 +8,9 @@ from kb_notes.application import Application
 from kb_notes.helpers import (
     buffer_is_empty,
     current_note_name,
+    slugify,
 )
 from kb_notes.config import (
-    ALLOWED_CHARS_PATTERN,
-    DEFAULT_SEPARATOR,
     OPEN_NOTE_SINK,
 )
 from kb_notes.preview import Preview
@@ -28,14 +25,6 @@ class Note:
         self.app = app
         self.preview = preview
 
-    @staticmethod
-    def slugify(text: str) -> str:
-        text = unicodedata.normalize("NFKD", text)
-        text = text.lower()
-        text = text.strip()
-        text = re.sub(ALLOWED_CHARS_PATTERN, DEFAULT_SEPARATOR, text)
-        return text
-
     def insert_template(self, note_name: str):
         note_content = self.app.config.template.format(note_name=note_name)
         self.app.nvim.current.buffer[:] = note_content.split("\n")
@@ -49,7 +38,7 @@ class Note:
             self.app.nvim.out_write(f"{e}\n")
             return
 
-        note_name_normalized = self.slugify(note_name)
+        note_name_normalized = slugify(note_name)
         if not note_name_normalized:
             self.app.nvim.out_write("filename is required\n")
             return

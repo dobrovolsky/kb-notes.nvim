@@ -1,5 +1,7 @@
 import os
+import re
 import subprocess
+import unicodedata
 from contextlib import contextmanager
 from typing import (
     ContextManager,
@@ -9,6 +11,11 @@ from typing import (
 
 from pynvim import Nvim
 from pynvim.api import Buffer
+
+from kb_notes.config import (
+    ALLOWED_CHARS_PATTERN,
+    DEFAULT_SEPARATOR,
+)
 
 
 def find_all(text: bytes, sub: bytes) -> Generator[int, None, None]:
@@ -53,3 +60,11 @@ def execute_command(command: List[str]) -> str:
         return subprocess.check_output(command).decode()
     except subprocess.CalledProcessError:
         return ""
+
+
+def slugify(text: str) -> str:
+    text = unicodedata.normalize("NFKD", text)
+    text = text.lower()
+    text = text.strip()
+    text = re.sub(ALLOWED_CHARS_PATTERN, DEFAULT_SEPARATOR, text)
+    return text
