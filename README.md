@@ -22,7 +22,6 @@ Internally uses following tools:
 - [nvim](https://neovim.io/)
 - [pynvim](https://github.com/neovim/pynvim)
 - [fzf](https://github.com/junegunn/fzf)
-- [fd](https://github.com/sharkdp/fd)
 - [rg](https://github.com/BurntSushi/ripgrep)
 
 Make sure you have installed these dependencies.

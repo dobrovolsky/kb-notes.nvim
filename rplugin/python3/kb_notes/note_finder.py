@@ -1,4 +1,5 @@
 import os
+import re
 from typing import (
     List,
     Optional,
@@ -44,21 +45,13 @@ class NoteFinder:
         return backlinks_files
 
     def find_children(self, note_name: str) -> List[str]:
-        files = []
-        res = execute_command(
-            [
-                "fd",
-                f"^{note_name}[.][^md]",
-                self.config.note_folder,
-            ],
-        )
+        pattern = re.compile(f"^{note_name}[.](?!md)")
+        notes = self.find_notes()
 
-        for line in res.split("\n"):
-            if line:
-                note = self.get_note_name(line)
-                files.append(note)
+        def is_child(parent, child):
+            return parent in child and pattern.match(child)
 
-        return files
+        return [note for note in notes if is_child(note_name, note)]
 
     def find_notes(self) -> List[str]:
         res = execute_command(
