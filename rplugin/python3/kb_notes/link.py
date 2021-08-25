@@ -168,6 +168,19 @@ class Link:
 
         self.open_note(parent_note)
 
+    def command_show_parent_notes(self):
+        self.preview.fzf_with_preview(
+            source=list(
+                reversed(
+                    self.app.note_finder.get_parent_notes_hierarchy(
+                        current_note_name(self.app.nvim)
+                    )
+                )
+            ),
+            sink=OPEN_NOTE_SINK,
+            location=self.app.config.note_folder,
+        )
+
     def command_show_connected_notes_for_link(self):
         note_match = self.get_note_under_cursor()
         if not note_match:
