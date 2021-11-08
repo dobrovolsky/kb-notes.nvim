@@ -129,7 +129,7 @@ class NoteRenamer:
     def _update_title(self, rename_note: RenameNote):
         with fileinput.input(
             self.app.note_finder.get_full_path_for_note(
-                rename_note.old_note_name.replace(".md", "")
+                rename_note.old_note_name.removesuffix(".md")
             ),
             inplace=True,
         ) as f:
