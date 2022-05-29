@@ -52,11 +52,20 @@ def current_note_name(nvim: Nvim) -> str:
 
 @contextmanager
 def disable_deoplete(nvim: Nvim) -> ContextManager[None]:
-    nvim.call("deoplete#disable")
+    disabled = False
+
+    try:
+        nvim.call("deoplete#disable")
+    except NvimError:
+        pass
+    else:
+        disabled = True
+
     try:
         yield
     finally:
-        nvim.call("deoplete#enable")
+        if disabled:
+            nvim.call("deoplete#enable")
 
 
 def char_under_cursor(nvim: Nvim) -> str:
