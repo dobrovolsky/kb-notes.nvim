@@ -129,6 +129,5 @@ endfunction
 - `KBSearchNote` - initiates search of notes
 - `KBShowConnectedNotesForLink` - finds links for link under cursor (links from current file, backlinks, children notes)
 - `KBShowParentNotes` - finds all parent notes
-- `KBSpellSuggestion` - replaces word with correct spelling
 
 Use `ctrl-e` to toggle preview in fzf.

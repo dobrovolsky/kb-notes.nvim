@@ -8,12 +8,10 @@ from kb_notes.note import Note
 from kb_notes.config import (
     LINK_SUGGESTION_SINK_FIND_AND_REPLACE_NOTE,
     LINK_SUGGESTION_SINK_INSERT_NOTE,
-    SPELL_SUGGESTION_SINK,
     OPEN_NOTE_SINK,
 )
 from kb_notes.note_renamer import NoteRenamer
 from kb_notes.preview import Preview
-from kb_notes.spell import Spell
 
 
 @pynvim.plugin
@@ -23,7 +21,6 @@ class NotesPlugin:
         preview = Preview(self.app)
 
         self.note_renamer = NoteRenamer(self.app)
-        self.spell = Spell(self.app)
         self.highlight = Highlight(self.app)
 
         self.note = Note(self.app, preview=preview)
@@ -109,19 +106,6 @@ class NotesPlugin:
     @pynvim.command("KBHighlightWikiLinks")
     def highlight_wikilinks(self):
         self.highlight.command_highlight_wikilinks()
-
-    #############################################################
-    # Spelling
-    #############################################################
-    @handle_exceptions
-    @pynvim.command(SPELL_SUGGESTION_SINK, nargs="*")
-    def spell_suggestion_sink(self, args):
-        self.spell.command_spell_suggestion_sink(args)
-
-    @handle_exceptions
-    @pynvim.command("KBSpellSuggestion")
-    def spell_suggestion(self):
-        self.spell.command_spell_suggestion()
 
     #############################################################
     # Renaming
