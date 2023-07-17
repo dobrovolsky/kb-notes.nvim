@@ -50,24 +50,6 @@ def current_note_name(nvim: Nvim) -> str:
     return os.path.splitext(current_file_name)[0]
 
 
-@contextmanager
-def disable_deoplete(nvim: Nvim) -> ContextManager[None]:
-    disabled = False
-
-    try:
-        nvim.call("deoplete#disable")
-    except NvimError:
-        pass
-    else:
-        disabled = True
-
-    try:
-        yield
-    finally:
-        if disabled:
-            nvim.call("deoplete#enable")
-
-
 def char_under_cursor(nvim: Nvim) -> str:
     return nvim.eval("getline('.')[col('.')-1]")
 

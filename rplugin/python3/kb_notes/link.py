@@ -8,7 +8,6 @@ from pynvim import NvimError
 from kb_notes.application import Application
 from kb_notes.helpers import (
     buffer_is_empty,
-    disable_deoplete,
     char_under_cursor,
     char_after_cursor,
     current_note_name,
@@ -112,24 +111,13 @@ class Link:
             note_match = self.get_note_under_cursor()
             self.open_note(note_name=note_match.name, search_for=note_match.reference)
         else:
-            if char_under_cursor(self.app.nvim) == "[" and char_after_cursor(
-                self.app.nvim
-            ):
-                # possible it's begging of url
-                # for some reason [ in the begging of url is treated as mkdDelimiter (plasticboy/vim-markdown)
-                self.app.nvim.feedkeys("l")
-
-            if self.highlight.is_url_under_cursor:
-                self.app.nvim.feedkeys("gx")
-            else:
-                self.app.nvim.out_write("No link under cursor\n")
+            self.app.nvim.command("lua require('follow-md-links').follow_link()")
 
     def command_link_suggestion_sink_insert_note(self, args):
         note_name = "".join(args)
 
-        with disable_deoplete(self.app.nvim):
-            self.app.nvim.feedkeys(f"a[[{note_name}]]")
-            self.app.nvim.command("stopinsert")
+        self.app.nvim.feedkeys(f"a[[{note_name}]]")
+        self.app.nvim.command("stopinsert")
 
     def command_link_suggestion_sink_find_note_and_replace(self, args):
         note_name = "".join(args)
@@ -138,9 +126,8 @@ class Link:
             # if fist bracket
             self.app.nvim.feedkeys("f[")
 
-        with disable_deoplete(self.app.nvim):
-            self.app.nvim.feedkeys(f'"_ci[{note_name}')
-            self.app.nvim.command("stopinsert")
+        self.app.nvim.feedkeys(f'"_ci[{note_name}')
+        self.app.nvim.command("stopinsert")
 
     def command_link_suggestion(self):
         note_match = self.get_note_under_cursor()
