@@ -28,6 +28,33 @@ local function get_parent_notes(note_name)
     return parent_notes
 end
 
+local function get_all_notes()
+    -- return list with all notes in notes_path
+    -- without extension but file should be markdown
+    local res = vim.fn.system("ls -t " .. config.notes_path)
+    local notes = {}
+    for line in string.gmatch(res, "[^\r\n]+") do
+        if string.match(line, "%.md$") then
+            local note = string.match(line, "^(.+)%..+$")
+            table.insert(notes, note)
+        end
+    end
+    return notes
+end
+
+local function find_children(note_name)
+    -- return list with all children of note_name
+    -- for examole programming.python will return all notes with name programming.python.*
+    local notes = get_all_notes()
+    local children = {}
+    for _, note in ipairs(notes) do
+        if string.match(note, "^" .. note_name .. "%..+$") then
+            table.insert(children, note)
+        end
+    end
+    return children
+end
+
 local function create_note(note_path)
     -- TODO: add template to config
     local template = "# {note_name}\n\n## References\n\n## Links\n\n## Notes\n\n"
@@ -48,9 +75,8 @@ end
 
 --- commands
 local function kb_open_daily_note()
-  local notes_path = vim.env.NOTES_PATH
   local current_date = os.date("%Y.%m.%d")
-  local file_path = notes_path .. "/notes.journaling." .. current_date .. ".md"
+  local file_path = config.notes_path .. "/notes.journaling." .. current_date .. ".md"
 
   -- Open the daily note file
   vim.cmd("edit " .. vim.fn.fnameescape(file_path))
@@ -156,8 +182,8 @@ local function kb_spell_suggest()
 end
 
 local function kb_show_backlinks()
-  local filename = vim.fn.expand('%:t:r')
-  require('fzf-lua').grep({search = '[['.. filename .. ']]'}, {})
+  local current_note = vim.fn.expand('%:t:r')
+  require('fzf-lua').grep({search = '[['.. current_note .. ']]'}, {})
 end
 
 local function kb_open_map()
@@ -170,7 +196,7 @@ local function kb_notify(text)
 end
 
 local function kb_go_to_parent_note()
-    local current_file = vim.fn.expand("%:t:r")
+    local current_note = vim.fn.expand("%:t:r")
     local current_file_path = vim.fn.expand("%:p:h")
     local current_file_extension = vim.fn.expand("%:e")
 
@@ -179,7 +205,7 @@ local function kb_go_to_parent_note()
       return
     end
 
-    local parent_notes = get_parent_notes(current_file)
+    local parent_notes = get_parent_notes(current_note)
     if #parent_notes == 0 then
       kb_notify("Current note is the root")
       return
@@ -193,10 +219,145 @@ local function kb_go_to_parent_note()
     vim.cmd("edit " .. parent_note_path)
 end
 
+local function cursor_on_markdown_link()
+    local current_line = line or vim.api.nvim_get_current_line()
+    local _, cur_col = unpack(vim.api.nvim_win_get_cursor(0))
+    cur_col = col or cur_col + 1 -- nvim_win_get_cursor returns 0-indexed column
+
+    local find_boundaries = function(pattern)
+        local open, close = current_line:find(pattern)
+        while open ~= nil and close ~= nil do
+          if open <= cur_col and cur_col <= close then
+            return open, close
+          end
+          open, close = current_line:find(pattern, close + 1)
+        end
+    end
+
+    local open, close = find_boundaries("%[%[.-%]%]")
+
+    return open, close
+end
+
+local function kb_open_link()
+    local open, close = cursor_on_markdown_link() -- get cursor position
+    local current_line = vim.api.nvim_get_current_line()
+
+    if open == nil or close == nil then
+        require('follow-md-links').follow_link()
+        return
+    end
+
+    local note_name = current_line:sub(open, close)
+    note_name = note_name:sub(3, -3) -- remove [[ and ]]
+
+    local note_path = config.notes_path .. "/" .. note_name .. ".md"
+
+    if vim.fn.filereadable(note_path) == 0 then
+        create_note(note_path)
+    end
+
+    vim.cmd("edit " .. note_path)
+end
+
+local function kb_link_suggestion()
+    require('fzf-lua').fzf_exec(
+        get_all_notes(),
+        {
+            previewer = false,
+            preview = require'fzf-lua'.shell.raw_preview_action_cmd(function(items)
+                return "bat --color=always " .. config.notes_path .. "/" .. items[1] .. ".md"
+            end),
+            actions = {
+                ["default"] = function(selected)
+                    local note_name = selected[1]
+                    local open, close = cursor_on_markdown_link() -- get cursor position
+
+                    if open == nil or close == nil then
+                        -- insert new link
+                        vim.api.nvim_feedkeys('i[[' .. note_name .. ']]', "n", true)
+                        vim.cmd("stopinsert")
+                        return
+                    end
+
+                    local char_under_cursor = function()
+                        return vim.api.nvim_eval("getline('.')[col('.')-1]")
+                    end
+                    local char_after_cursor = function()
+                        return vim.api.nvim_eval("getline('.')[col('.')]")
+                    end
+
+                    if char_under_cursor() == "[" and char_after_cursor() == "[" then
+                        -- if fist bracket
+                        vim.api.nvim_feedkeys("f[", "n", true)
+                    end
+                    if char_under_cursor() == "]" then
+                        -- if second bracket
+                        vim.api.nvim_feedkeys("F[", "n", true)
+                    end
+                    vim.api.nvim_feedkeys('"_ci[' .. note_name, "n", true)
+                    vim.cmd("stopinsert")
+                end
+            }
+        }
+    )
+
+
+end
+
+local function kb_random_note()
+    -- Open a random note
+    local notes = get_all_notes()
+    local random_note = notes[math.random(#notes)]
+    local note_path = config.notes_path .. "/" .. random_note .. ".md"
+
+    vim.cmd("edit " .. note_path)
+end
+
+local function kb_search_notes()
+    require('fzf-lua').fzf_exec(
+        get_all_notes(),
+        {
+            previewer = false,
+            preview = require'fzf-lua'.shell.raw_preview_action_cmd(function(items)
+                return "bat --color=always " .. config.notes_path .. "/" .. items[1] .. ".md"
+            end),
+            actions = {
+                ["default"] = function(selected)
+                    vim.cmd("edit " .. selected[1] .. ".md")
+                end
+            },
+        }
+    )
+end
+
+local function kb_search_notes_with_prefix()
+    local current_note = vim.fn.expand("%:t:r")
+
+    require('fzf-lua').fzf_exec(
+        get_all_notes(),
+        {
+            previewer = false,
+            preview = require'fzf-lua'.shell.raw_preview_action_cmd(function(items)
+                return "bat --color=always " .. config.notes_path .. "/" .. items[1] .. ".md"
+            end),
+            actions = {
+                ["default"] = function(selected)
+                    vim.cmd("edit " .. selected[1] .. ".md")
+                end
+            },
+            fzf_opts = {
+                ["--query"] = current_note,
+            },
+        }
+    )
+end
+
+
 --- extras
 local function load_kb_settings()
      -- OpenLink uses this command
-     vim.cmd([[syntax match wikiLink /\[\[.\{-}\]\]/ containedin=mkdNonListItemBlock,mkdListItemLine,htmlH1,htmlH2,htmlH3,htmlH4,htmlH5,htmlH6]])
+     --vim.cmd([[syntax match wikiLink /\[\[.\{-}\]\]/ containedin=mkdNonListItemBlock,mkdListItemLine,htmlH1,htmlH2,htmlH3,htmlH4,htmlH5,htmlH6]])
 
      -- Run user defined post init function
      -- This is useful for setting up mappings
@@ -214,16 +375,6 @@ local function setupAutocmd()
           group = 'KbGroup',
           pattern = config.notes_path .. '*.md',
           command = 'LoadKBSettings',
-     })
-     vim.api.nvim_create_autocmd({'BufEnter', 'TextChanged', 'TextChangedI'}, {
-          group = 'KbGroup',
-          pattern = config.notes_path .. '*.md',
-          command = 'KBHighlightWikiLinks',
-     })
-     vim.api.nvim_create_autocmd('ColorScheme', {
-          pattern = '*',
-          group = 'KbGroup',
-          command = 'KBHighlightWikiLinks',
      })
 end
 
@@ -255,6 +406,11 @@ function M.setup(user_config)
      M.kb_open_map = kb_open_map
      M.kb_go_to_parent_note = kb_go_to_parent_note
      M.kb_notify = kb_notify
+     M.kb_open_link = kb_open_link
+     M.kb_random_note = kb_random_note
+     M.kb_search_notes = kb_search_notes
+     M.kb_search_notes_with_prefix = kb_search_notes_with_prefix
+     M.kb_link_suggestion = kb_link_suggestion
 
      vim.api.nvim_create_user_command('LoadKBSettings', 'lua require("kb_notes").load_kb_settings()', { nargs = 0 })
      vim.api.nvim_create_user_command('KBOpenDailyNote', 'lua require("kb_notes").kb_open_daily_note()', { nargs = 0 })
@@ -267,6 +423,11 @@ function M.setup(user_config)
      vim.api.nvim_create_user_command('KBOpenMap', 'lua require("kb_notes").kb_open_map()', { nargs = 0 })
      vim.api.nvim_create_user_command('KBGoToParentNote', 'lua require("kb_notes").kb_go_to_parent_note()', { nargs = 0 })
      vim.api.nvim_create_user_command('KBNotify', 'lua require("kb_notes").kb_notify(<f-args>)', { nargs = 1 })
+     vim.api.nvim_create_user_command('KBOpenLink', 'lua require("kb_notes").kb_open_link()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBRandomNote', 'lua require("kb_notes").kb_random_note()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBSearchNote', 'lua require("kb_notes").kb_search_notes()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBSearchNoteWithPrefix', 'lua require("kb_notes").kb_search_notes_with_prefix()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBLinkSuggestion', 'lua require("kb_notes").kb_link_suggestion()', { nargs = 0 })
 
      setupAutocmd()
 end
