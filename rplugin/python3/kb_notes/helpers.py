@@ -103,12 +103,12 @@ def handle_exceptions(func: typing.Callable = None) -> typing.Callable:
         try:
             return func(*args, **kwargs)
         except InputError as e:
-            self.app.nvim.out_write(f"Input error: {e}\n")
+            self.app.nvim.command(f"KBNotify 'Input error: {e}'")
         except ActionAborted:
-            self.app.nvim.out_write("Action is aborted\n")
+            self.app.nvim.command(f"KBNotify 'Action is aborted'")
         except NoteExists as e:
-            self.app.nvim.out_write(f"Note exists: {e}\n")
+            self.app.nvim.command(f"KBNotify 'Note exists: {e}'")
         except ApplicationException as e:
-            self.app.nvim.out_write(f"{e}\n")
+            self.app.nvim.command(f"KBNotify 'Application error: {e}'")
 
     return decorated

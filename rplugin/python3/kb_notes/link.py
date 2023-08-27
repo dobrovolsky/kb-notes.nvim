@@ -103,7 +103,7 @@ class Link:
             try:
                 self.app.nvim.command(f"/{search_for}")
             except NvimError as e:
-                self.app.nvim.out_write(f"{e}\n")
+                self.app.nvim.command("KBNotify No link under cursor")
                 return
 
     def command_open_link(self):
@@ -150,28 +150,15 @@ class Link:
         parent_note = self.app.note_finder.find_parent(current_note_name(self.app.nvim))
 
         if not parent_note:
-            self.app.nvim.out_write("Current note is the root\n")
+            self.app.nvim.command("KBNotify Current note is the root")
             return
 
         self.open_note(parent_note)
 
-    def command_show_parent_notes(self):
-        self.preview.fzf_with_preview(
-            source=list(
-                reversed(
-                    self.app.note_finder.get_parent_notes_hierarchy(
-                        current_note_name(self.app.nvim)
-                    )
-                )
-            ),
-            sink=OPEN_NOTE_SINK,
-            location=self.app.config.note_folder,
-        )
-
     def command_show_connected_notes_for_link(self):
         note_match = self.get_note_under_cursor()
         if not note_match:
-            self.app.nvim.out_write("No link under cursor\n")
+            self.app.nvim.command("KBNotify No link under cursor")
             return
 
         note_name = note_match.name

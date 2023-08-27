@@ -62,16 +62,6 @@ class NotesPlugin:
         self.link.command_link_suggestion()
 
     @handle_exceptions
-    @pynvim.command("KBGoToParentNote")
-    def go_up(self):
-        self.link.command_go_to_parent_note()
-
-    @handle_exceptions
-    @pynvim.command("KBShowParentNotes")
-    def show_parent_notes(self):
-        self.link.command_show_parent_notes()
-
-    @handle_exceptions
     @pynvim.command("KBShowConnectedNotesForLink")
     def show_connected_notes_for_link(self):
         self.link.command_show_connected_notes_for_link()
