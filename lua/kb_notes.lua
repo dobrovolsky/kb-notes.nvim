@@ -11,6 +11,10 @@ local function split(str, sep)
     return result
 end
 
+local function notify(text)
+  require("notify")(text, 2, {render = 'minimal'})
+end
+
 local function get_parent_notes(note_name)
     -- note_name is a string like a.b.c
     -- return list with [a, a.b], not including current note
@@ -26,6 +30,26 @@ local function get_parent_notes(note_name)
       table.insert(parent_notes, parent_note)
     end
     return parent_notes
+end
+
+local function cursor_on_markdown_link()
+    local current_line = line or vim.api.nvim_get_current_line()
+    local _, cur_col = unpack(vim.api.nvim_win_get_cursor(0))
+    cur_col = col or cur_col + 1 -- nvim_win_get_cursor returns 0-indexed column
+
+    local find_boundaries = function(pattern)
+        local open, close = current_line:find(pattern)
+        while open ~= nil and close ~= nil do
+          if open <= cur_col and cur_col <= close then
+            return open, close
+          end
+          open, close = current_line:find(pattern, close + 1)
+        end
+    end
+
+    local open, close = find_boundaries("%[%[.-%]%]")
+
+    return open, close
 end
 
 local function get_all_notes()
@@ -73,8 +97,155 @@ local function get_date_from_filename(filename)
   return date_string
 end
 
+local function slugify(text)
+    text = string.lower(text)
+    text = string.gsub(text, " ", "-")
+    text = string.gsub(text, "[^a-zA-Z0-9-.]", "-")
+    return text
+end
+
+local function rename_process_note(old_note_name, new_note_name)
+    local function update_links(old_note_name, new_note_name)
+        local notes = get_all_notes()
+        for _, note in ipairs(notes) do
+            local note_path = config.notes_path .. "/" .. note .. ".md"
+            local note_file = io.open(note_path, "r")
+            local content = note_file:read("*a")
+            note_file:close()
+
+            local new_content = string.gsub(content, "%[%[" .. old_note_name .. "%]%]", "[[" .. new_note_name .. "]]")
+            if new_content ~= content then
+                note_file = io.open(note_path, "w")
+                note_file:write(new_content)
+                note_file:close()
+            end
+        end
+    end
+
+    local function update_title(old_note_name, new_note_name)
+        local note_path = config.notes_path .. "/" .. new_note_name .. ".md"
+        local note_file = io.open(note_path, "r")
+        local content = note_file:read("*a")
+        note_file:close()
+
+        local new_content = string.gsub(content, "# " .. old_note_name .. "\n", "# " .. new_note_name .. "\n")
+        if new_content ~= content then
+            note_file = io.open(note_path, "w")
+            note_file:write(new_content)
+            note_file:close()
+        end
+    end
+
+    local function move_note(old_note_name, new_note_name)
+        local old_note_path = config.notes_path .. "/" .. old_note_name .. ".md"
+        local new_note_path = config.notes_path .. "/" .. new_note_name .. ".md"
+
+        os.rename(old_note_path, new_note_path)
+    end
+
+    local children_note = find_children(old_note_name)
+    table.insert(children_note, old_note_name)
+
+    local new_children_note = {}
+    for _, note in ipairs(children_note) do
+        local new_note = string.gsub(note, old_note_name, new_note_name, 1)
+        table.insert(new_children_note, new_note)
+    end
+
+    local existing_files = {}
+    for _, note in ipairs(new_children_note) do
+        local note_path = config.notes_path .. "/" .. note .. ".md"
+        if vim.fn.filereadable(note_path) == 1 then
+            table.insert(existing_files, note)
+        end
+    end
+
+    if #existing_files > 0 then
+        return false, existing_files, {}
+    end
+
+    local processed = {}
+    for i, note in ipairs(children_note) do
+        local old_note_name = note
+        local new_note_name = new_children_note[i]
+
+        update_links(old_note_name, new_note_name)
+        move_note(old_note_name, new_note_name)
+        update_title(old_note_name, new_note_name)
+        table.insert(processed, {old_note_name = old_note_name, new_note_name = new_note_name})
+    end
+
+    return true, {}, processed
+end
+
 --- commands
-local function kb_open_daily_note()
+local function command_create_note()
+    local note_name = vim.fn.input("Enter note name: ")
+    local note_name_normalized = slugify(note_name)
+
+    local not_existing_parents = get_parent_notes(note_name_normalized)
+    if #not_existing_parents > 0 then
+        local confirmed = vim.fn.confirm("Notes: [" .. table.concat(not_existing_parents, ", ") .. "] do not exist", "&Yes\n&No", 2)
+        if confirmed ~= 1 then
+            return
+        end
+    end
+
+    local note_path = config.notes_path .. "/" .. note_name_normalized .. ".md"
+    if vim.fn.filereadable(note_path) == 0 then
+      create_note(note_path)
+    end
+
+    vim.cmd("edit " .. note_path)
+end
+
+
+
+local function command_note_rename()
+    local current_note = vim.fn.expand("%:t:r")
+    local new_note_name = vim.fn.input("Enter note name: ", current_note)
+    local new_note_name_normalized = slugify(new_note_name)
+
+    local parents = get_parent_notes(new_note_name_normalized)
+    local not_existing_parents = {}
+    for _, parent in ipairs(parents) do
+        local note_path = config.notes_path .. "/" .. parent .. ".md"
+        if vim.fn.filereadable(note_path) == 0 then
+            table.insert(not_existing_parents, parent)
+        end
+    end
+    if #not_existing_parents > 0 then
+        local confirmed = vim.fn.confirm("Notes: [" .. table.concat(not_existing_parents, ", ") .. "] do not exist", "&Yes\n&No", 2)
+        if confirmed ~= 1 then
+            return
+        end
+    end
+
+    -- save current buffer
+    vim.cmd("w")
+
+    local success, existing_files, renamed = rename_process_note(current_note, new_note_name_normalized)
+
+    if #existing_files > 0 then
+        vim.cmd("echo 'Notes: [" .. table.concat(existing_files, ", ") .. "] already exist'")
+        return
+    end
+
+    vim.cmd("e " .. config.notes_path .. "/" .. new_note_name_normalized .. ".md")
+
+    -- close all buffers but not current one
+    vim.cmd("w | %bd | e#")
+
+    local message = ""
+    for _, note in ipairs(renamed) do
+        message = message .. note.old_note_name .. " -> " .. note.new_note_name .. "\n"
+    end
+
+    print(message)
+end
+
+
+local function command_open_daily_note()
   local current_date = os.date("%Y.%m.%d")
   local file_path = config.notes_path .. "/notes.journaling." .. current_date .. ".md"
 
@@ -101,7 +272,7 @@ local function kb_open_daily_note()
 end
 
 -- Updates header in file if it matches with filename
-local function kb_update_note_header()
+local function command_update_note_header()
   local current_title = vim.fn.getline(1)
   local expected_title = "# " .. vim.fn.expand("%:r")
   if current_title ~= expected_title and string.match(current_title, "^# ") then
@@ -110,8 +281,8 @@ local function kb_update_note_header()
 end
 
 -- Paste img from clipboard copied as path
-local function kb_paste_img()
-  local script_path = vim.fn.expand("~/.dotfiles/bin/_kb_paste_img")
+local function command_paste_img()
+  local script_path = vim.fn.expand("~/.dotfiles/bin/_command_paste_img")
   local command = "python3 " .. script_path
 
   -- Execute the command and capture the output and error messages
@@ -139,7 +310,7 @@ local function kb_paste_img()
 end
 
 -- Next/Prev daily note
-local function kb_next_day()
+local function command_next_day()
   local current_buffer = vim.fn.bufname()
   local current_date = get_date_from_filename(current_buffer)
 
@@ -154,11 +325,11 @@ local function kb_next_day()
       print("File does not exist: " .. next_file)
     end
   else
-    kb_open_daily_note()
+    command_open_daily_note()
   end
 end
 
-local function kb_prev_day()
+local function command_prev_day()
   local current_buffer = vim.fn.bufname()
   local current_date = get_date_from_filename(current_buffer)
 
@@ -173,29 +344,25 @@ local function kb_prev_day()
       print("File does not exist: " .. prev_file)
     end
   else
-    kb_open_daily_note()
+    command_open_daily_note()
   end
 end
 
-local function kb_spell_suggest()
+local function command_spell_suggest()
   require('fzf-lua').spell_suggest()
 end
 
-local function kb_show_backlinks()
+local function command_show_backlinks()
   local current_note = vim.fn.expand('%:t:r')
   require('fzf-lua').grep({search = '[['.. current_note .. ']]'}, {})
 end
 
-local function kb_open_map()
+local function command_open_map()
   local filepath = vim.fn.expand('%:p')
   io.popen('markmap ' .. filepath .. ' -o /tmp/map.html')
 end
 
-local function kb_notify(text)
-  require("notify")(text, 2, {render = 'minimal'})
-end
-
-local function kb_go_to_parent_note()
+local function command_go_to_parent_note()
     local current_note = vim.fn.expand("%:t:r")
     local current_file_path = vim.fn.expand("%:p:h")
     local current_file_extension = vim.fn.expand("%:e")
@@ -207,7 +374,7 @@ local function kb_go_to_parent_note()
 
     local parent_notes = get_parent_notes(current_note)
     if #parent_notes == 0 then
-      kb_notify("Current note is the root")
+      notify("Current note is the root")
       return
     end
 
@@ -219,27 +386,8 @@ local function kb_go_to_parent_note()
     vim.cmd("edit " .. parent_note_path)
 end
 
-local function cursor_on_markdown_link()
-    local current_line = line or vim.api.nvim_get_current_line()
-    local _, cur_col = unpack(vim.api.nvim_win_get_cursor(0))
-    cur_col = col or cur_col + 1 -- nvim_win_get_cursor returns 0-indexed column
 
-    local find_boundaries = function(pattern)
-        local open, close = current_line:find(pattern)
-        while open ~= nil and close ~= nil do
-          if open <= cur_col and cur_col <= close then
-            return open, close
-          end
-          open, close = current_line:find(pattern, close + 1)
-        end
-    end
-
-    local open, close = find_boundaries("%[%[.-%]%]")
-
-    return open, close
-end
-
-local function kb_open_link()
+local function command_open_link()
     local open, close = cursor_on_markdown_link() -- get cursor position
     local current_line = vim.api.nvim_get_current_line()
 
@@ -260,7 +408,7 @@ local function kb_open_link()
     vim.cmd("edit " .. note_path)
 end
 
-local function kb_link_suggestion()
+local function command_link_suggestion()
     require('fzf-lua').fzf_exec(
         get_all_notes(),
         {
@@ -305,7 +453,7 @@ local function kb_link_suggestion()
 
 end
 
-local function kb_random_note()
+local function command_random_note()
     -- Open a random note
     local notes = get_all_notes()
     local random_note = notes[math.random(#notes)]
@@ -314,7 +462,7 @@ local function kb_random_note()
     vim.cmd("edit " .. note_path)
 end
 
-local function kb_search_notes()
+local function command_search_notes()
     require('fzf-lua').fzf_exec(
         get_all_notes(),
         {
@@ -324,14 +472,14 @@ local function kb_search_notes()
             end),
             actions = {
                 ["default"] = function(selected)
-                    vim.cmd("edit " .. selected[1] .. ".md")
+                    vim.cmd("edit " .. config.notes_path .. '/' .. selected[1] .. ".md")
                 end
             },
         }
     )
 end
 
-local function kb_search_notes_with_prefix()
+local function command_search_notes_with_prefix()
     local current_note = vim.fn.expand("%:t:r")
 
     require('fzf-lua').fzf_exec(
@@ -343,7 +491,7 @@ local function kb_search_notes_with_prefix()
             end),
             actions = {
                 ["default"] = function(selected)
-                    vim.cmd("edit " .. selected[1] .. ".md")
+                    vim.cmd("edit " .. config.notes_path .. '/' .. selected[1] .. ".md")
                 end
             },
             fzf_opts = {
@@ -396,38 +544,41 @@ function M.setup(user_config)
      vim.g.kb_notes_fzf_options = config.notes_fzf_options
 
      M.load_kb_settings = load_kb_settings
-     M.kb_open_daily_note = kb_open_daily_note
-     M.kb_update_note_header = kb_update_note_header
-     M.kb_paste_img = kb_paste_img
-     M.kb_next_day = kb_next_day
-     M.kb_prev_day = kb_prev_day
-     M.kb_spell_suggest = kb_spell_suggest
-     M.kb_show_backlinks = kb_show_backlinks
-     M.kb_open_map = kb_open_map
-     M.kb_go_to_parent_note = kb_go_to_parent_note
-     M.kb_notify = kb_notify
-     M.kb_open_link = kb_open_link
-     M.kb_random_note = kb_random_note
-     M.kb_search_notes = kb_search_notes
-     M.kb_search_notes_with_prefix = kb_search_notes_with_prefix
-     M.kb_link_suggestion = kb_link_suggestion
+
+     M.command_open_daily_note = command_open_daily_note
+     M.command_update_note_header = command_update_note_header
+     M.command_paste_img = command_paste_img
+     M.command_next_day = command_next_day
+     M.command_prev_day = command_prev_day
+     M.command_spell_suggest = command_spell_suggest
+     M.command_show_backlinks = command_show_backlinks
+     M.command_open_map = command_open_map
+     M.command_go_to_parent_note = command_go_to_parent_note
+     M.command_open_link = command_open_link
+     M.command_random_note = command_random_note
+     M.command_search_notes = command_search_notes
+     M.command_search_notes_with_prefix = command_search_notes_with_prefix
+     M.command_link_suggestion = command_link_suggestion
+     M.command_create_note = command_create_note
+     M.command_note_rename = command_note_rename
 
      vim.api.nvim_create_user_command('LoadKBSettings', 'lua require("kb_notes").load_kb_settings()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBOpenDailyNote', 'lua require("kb_notes").kb_open_daily_note()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBUpdateNoteHeader', 'lua require("kb_notes").kb_update_note_header()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBPasteImg', 'lua require("kb_notes").kb_paste_img()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBNextDay', 'lua require("kb_notes").kb_next_day()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBPrevDay', 'lua require("kb_notes").kb_prev_day()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBSpellSuggest', 'lua require("kb_notes").kb_spell_suggest()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBShowBacklinks', 'lua require("kb_notes").kb_show_backlinks()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBOpenMap', 'lua require("kb_notes").kb_open_map()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBGoToParentNote', 'lua require("kb_notes").kb_go_to_parent_note()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBNotify', 'lua require("kb_notes").kb_notify(<f-args>)', { nargs = 1 })
-     vim.api.nvim_create_user_command('KBOpenLink', 'lua require("kb_notes").kb_open_link()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBRandomNote', 'lua require("kb_notes").kb_random_note()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBSearchNote', 'lua require("kb_notes").kb_search_notes()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBSearchNoteWithPrefix', 'lua require("kb_notes").kb_search_notes_with_prefix()', { nargs = 0 })
-     vim.api.nvim_create_user_command('KBLinkSuggestion', 'lua require("kb_notes").kb_link_suggestion()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBOpenDailyNote', 'lua require("kb_notes").command_open_daily_note()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBUpdateNoteHeader', 'lua require("kb_notes").command_update_note_header()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBPasteImg', 'lua require("kb_notes").command_paste_img()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBNextDay', 'lua require("kb_notes").command_next_day()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBPrevDay', 'lua require("kb_notes").command_prev_day()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBSpellSuggest', 'lua require("kb_notes").command_spell_suggest()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBShowBacklinks', 'lua require("kb_notes").command_show_backlinks()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBOpenMap', 'lua require("kb_notes").command_open_map()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBGoToParentNote', 'lua require("kb_notes").command_go_to_parent_note()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBOpenLink', 'lua require("kb_notes").command_open_link()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBRandomNote', 'lua require("kb_notes").command_random_note()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBSearchNote', 'lua require("kb_notes").command_search_notes()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBSearchNoteWithPrefix', 'lua require("kb_notes").command_search_notes_with_prefix()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBLinkSuggestion', 'lua require("kb_notes").command_link_suggestion()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBNewNote', 'lua require("kb_notes").command_create_note()', { nargs = 0 })
+     vim.api.nvim_create_user_command('KBRenameNote', 'lua require("kb_notes").command_note_rename()', { nargs = 0 })
 
      setupAutocmd()
 end
