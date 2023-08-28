@@ -206,6 +206,15 @@ local function command_note_rename()
     local new_note_name = vim.fn.input("Enter note name: ", current_note)
     local new_note_name_normalized = slugify(new_note_name)
 
+    if current_note == new_note_name_normalized then
+        notify("Same name")
+        return
+    end
+    if #new_note_name_normalized == 0 then
+        notify("Empty name")
+        return
+    end
+
     local parents = get_parent_notes(new_note_name_normalized)
     local not_existing_parents = {}
     for _, parent in ipairs(parents) do
@@ -227,7 +236,7 @@ local function command_note_rename()
     local success, existing_files, renamed = rename_process_note(current_note, new_note_name_normalized)
 
     if #existing_files > 0 then
-        vim.cmd("echo 'Notes: [" .. table.concat(existing_files, ", ") .. "] already exist'")
+        notify("Notes: [" .. table.concat(existing_files, ", ") .. "] already exist")
         return
     end
 
@@ -236,12 +245,9 @@ local function command_note_rename()
     -- close all buffers but not current one
     vim.cmd("w | %bd | e#")
 
-    local message = ""
     for _, note in ipairs(renamed) do
-        message = message .. note.old_note_name .. " -> " .. note.new_note_name .. "\n"
+        notify("Note " .. note.old_note_name .. " renamed to " .. note.new_note_name)
     end
-
-    print(message)
 end
 
 
@@ -301,11 +307,11 @@ local function command_paste_img()
       -- Insert the Markdown image link at the current cursor position
       vim.cmd("normal! a" .. image_link)
     else
-      print("Failed to paste image.")
+      notify("Failed to paste image.")
     end
   else
     -- Print the error message from stderr
-    print("Failed to paste image: " .. output)
+    notify("Failed to paste image: " .. output)
   end
 end
 
@@ -322,7 +328,7 @@ local function command_next_day()
     if vim.fn.filereadable(next_file) == 1 then
       vim.cmd("edit " .. next_file)
     else
-      print("File does not exist: " .. next_file)
+      notify("File does not exist: " .. next_file)
     end
   else
     command_open_daily_note()
@@ -341,7 +347,7 @@ local function command_prev_day()
     if vim.fn.filereadable(prev_file) == 1 then
       vim.cmd("edit " .. prev_file)
     else
-      print("File does not exist: " .. prev_file)
+      notify("File does not exist: " .. prev_file)
     end
   else
     command_open_daily_note()
