@@ -9,13 +9,6 @@ Supports:
 - discovering backlinks
 - note renaming: updates backlinks, update child notes names and titles
 
-## Known issues
-
-- Not garanteed to work for anybody except me. I use it for my own notes.
-- Support only `AZaz09.-` in note names
-- Works only for notes in the same directory
-- Following a url link does not work without [treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
-
 ## Installation
 
 Install with your favorite plugin manager.
@@ -109,3 +102,10 @@ This is very specific commands that I use for my own notes.
 - `:KBOpenMap` - opens current note as mind map in browser
 - `:KBPasteImg` - pastes image from clipboard to current note
 - `:KBPrevDay` - opens previous daily note
+
+## Known issues
+
+- Not guaranteed to work for anybody except me. I use it for my own notes.
+- Support only `AZaz09.-` in note names
+- Works only for notes in the same directory
+- Following an url link does not work without [treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
