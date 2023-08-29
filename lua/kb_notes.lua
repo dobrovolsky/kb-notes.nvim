@@ -148,7 +148,9 @@ local function rename_process_note(old_note_name, new_note_name)
 
     local new_children_note = {}
     for _, note in ipairs(children_note) do
-        local new_note = string.gsub(note, old_note_name, new_note_name, 1)
+        notify(note .. ', ' .. old_note_name .. ', ' .. new_note_name)
+        local new_note = string.gsub(note, old_note_name, new_note_name)
+        notify(new_note)
         table.insert(new_children_note, new_note)
     end
 
