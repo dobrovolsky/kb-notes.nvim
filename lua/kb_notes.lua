@@ -84,14 +84,11 @@ local function find_children(note_name)
 end
 
 local function create_note(note_path)
-    -- TODO: add template to config
-    local template = "# {note_name}\n\n## References\n\n## Links\n\n## Notes\n\n"
-
     -- filename is full path to file but need only filename without extension
     local note_name = string.match(note_path, "^.+/(.+)%..+$")
 
     local note_file = io.open(note_path, "w")
-    local content = string.gsub(template, "{note_name}", note_name)
+    local content = string.gsub(config.template, "{note_name}", note_name)
     note_file:write(content)
     note_file:close()
 end
@@ -539,9 +536,9 @@ end
 function M.setup(user_config)
      -- Set default configuration values
      local _config = vim.tbl_extend('force', {
-          notes_fzf_options = "--bind='ctrl-e:toggle-preview' --preview 'bat --color=always " .. user_config.notes_path .. "/{}.md'", -- FZF options used search for notes
           notes_path = nil,  -- The path to the directory containing the notes
           note_post_init = nil,  -- User defined function to run after the plugin has been setup. Useful for setting up mappings
+          template = '# {note_name}'
      }, user_config or {})
 
      if _config.notes_path == nil then

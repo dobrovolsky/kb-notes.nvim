@@ -18,7 +18,7 @@ Example for [lazy.nvim](https//github.com/folke/lazy.nvim)
 ```lua
 require("lazy").setup({
   { 
-    dir = '~/projects/kb_notes',
+    'dobrovolsky/kb-notes.nvim',
     dependencies = {
       'ibhagwan/fzf-lua',
       -- open markdown link
@@ -30,10 +30,13 @@ require("lazy").setup({
 }
 
 require('kb_notes').setup {
-  -- Required: path to your notes
+  -- Required: full path to your notes
   notes_path = '/Users/s/kb/notes/',
   -- Optinal: use a custom post init function
   note_post_init = KBPostInit
+  -- Optinal: define your own template for new notes
+  -- supported variabled {note_name} will be replaced with your name
+  template = '# {note_name}
 }
 
 -- Example post init function
@@ -82,10 +85,10 @@ function KBPostInit()
 
 ### General commands
 
-- `:LoadKBSettings` - is executed on BufEnter and loads all settings for the current buffer
 - `:KBGoToParentNote` - opens parent note
 - `:KBLinkSuggestion` - shows suggestions for wikilink
 - `:KBNewNote` - creates new note
+- `:KBOpenLink` - opens link under cursor
 - `:KBRandomNote` - opens random note
 - `:KBRenameNote` - renames current note
 - `:KBSearchNoteWithPrefix` - searches note with a predefined query and prefix
@@ -93,13 +96,14 @@ function KBPostInit()
 - `:KBShowBacklinks` - shows all backlinks for current note
 - `:KBSpellSuggest` - shows suggestions for word under cursor
 - `:KBUpdateNoteHeader` - updates note header with filename and prettifies markdown
+- `:LoadKBSettings` - is executed on BufEnter and loads all settings for the current buffer
 
 ### Additional commands
 
 This is a very specific command that I use for my own notes.
 
-- `:KBOpenLink` - opens link under cursor
-- `:KBOpenMap` - opens current note as a mind map in browser
+- `:KBOpenDailyNote` - opens daily note
+- `:KBOpenMap` - opens current note as a mind map in browser ([markmap-cli](https://github.com/markmap/markmap) is required
 - `:KBPasteImg` - pastes image from clipboard to current note
 - `:KBPrevDay` - opens previous daily note
 
@@ -109,3 +113,7 @@ This is a very specific command that I use for my own notes.
 - Support only `AZaz09.-` in note names
 - Works only for notes in the same directory
 - Following an url link does not work without [treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
+
+## Old python version
+
+There is old python version. Stores in `old_python`.
