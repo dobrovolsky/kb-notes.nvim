@@ -88,18 +88,18 @@ function KBPostInit()
 - `:KBNewNote` - creates new note
 - `:KBRandomNote` - opens random note
 - `:KBRenameNote` - renames current note
-- `:KBSearchNoteWithPrefix` - searches note with predefined query and prefix
-- `:KBSearchNote` - searches note with predefined query
+- `:KBSearchNoteWithPrefix` - searches note with a predefined query and prefix
+- `:KBSearchNote` - searches note with a predefined query
 - `:KBShowBacklinks` - shows all backlinks for current note
 - `:KBSpellSuggest` - shows suggestions for word under cursor
 - `:KBUpdateNoteHeader` - updates note header with filename and prettifies markdown
 
 ### Additional commands
 
-This is very specific commands that I use for my own notes.
+This is a very specific command that I use for my own notes.
 
 - `:KBOpenLink` - opens link under cursor
-- `:KBOpenMap` - opens current note as mind map in browser
+- `:KBOpenMap` - opens current note as a mind map in browser
 - `:KBPasteImg` - pastes image from clipboard to current note
 - `:KBPrevDay` - opens previous daily note
 
