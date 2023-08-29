@@ -3,6 +3,37 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project DOES NOT adhere
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.11
+
+Rewrite plugin code in lua.
+
+### Updated:
+
+New list of commands:
+
+#### General commands
+
+- `:LoadKBSettings` - is executed on BufEnter and loads all settings for the current buffer
+- `:KBGoToParentNote` - opens parent note
+- `:KBLinkSuggestion` - shows suggestions for wikilink
+- `:KBNewNote` - creates new note
+- `:KBRandomNote` - opens random note
+- `:KBRenameNote` - renames current note
+- `:KBSearchNoteWithPrefix` - searches note with a predefined query and prefix
+- `:KBSearchNote` - searches note with a predefined query
+- `:KBShowBacklinks` - shows all backlinks for current note
+- `:KBSpellSuggest` - shows suggestions for word under cursor
+- `:KBUpdateNoteHeader` - updates note header with filename and prettifies markdown
+
+#### Additional commands
+
+This is a very specific command that I use for my own notes.
+
+- `:KBOpenLink` - opens link under cursor
+- `:KBOpenMap` - opens current note as a mind map in browser
+- `:KBPasteImg` - pastes image from clipboard to current note
+- `:KBPrevDay` - opens previous daily note
+
 ## 0.0.10
 
 ### Fixed:
