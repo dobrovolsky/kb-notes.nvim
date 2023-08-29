@@ -15,6 +15,10 @@ local function notify(text)
   require("notify")(text, 2, {render = 'minimal'})
 end
 
+function escape_pattern(text)
+    return text:gsub("([^%w])", "%%%1")
+end
+
 local function get_parent_notes(note_name)
     -- note_name is a string like a.b.c
     -- return list with [a, a.b], not including current note
@@ -128,7 +132,7 @@ local function rename_process_note(old_note_name, new_note_name)
         local content = note_file:read("*a")
         note_file:close()
 
-        local new_content = string.gsub(content, "# " .. old_note_name .. "\n", "# " .. new_note_name .. "\n")
+        local new_content = string.gsub(content, escape_pattern("# " .. old_note_name), "# " .. new_note_name)
         if new_content ~= content then
             note_file = io.open(note_path, "w")
             note_file:write(new_content)
@@ -148,9 +152,7 @@ local function rename_process_note(old_note_name, new_note_name)
 
     local new_children_note = {}
     for _, note in ipairs(children_note) do
-        notify(note .. ', ' .. old_note_name .. ', ' .. new_note_name)
-        local new_note = string.gsub(note, old_note_name, new_note_name)
-        notify(new_note)
+        local new_note = string.gsub(note, escape_pattern(old_note_name), new_note_name)
         table.insert(new_children_note, new_note)
     end
 
