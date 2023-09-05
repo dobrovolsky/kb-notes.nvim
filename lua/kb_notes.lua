@@ -181,10 +181,25 @@ end
 
 --- commands
 local function command_create_note()
-    local note_name = vim.fn.input("Enter note name: ")
+    local current_note = vim.fn.expand("%:t:r")
+    local note_name = vim.fn.input("Enter note name: ", current_note)
+
+    if #note_name == 0 then
+        notify("Empty name")
+        return
+    end
+
     local note_name_normalized = slugify(note_name)
 
-    local not_existing_parents = get_parent_notes(note_name_normalized)
+    local parents = get_parent_notes(note_name_normalized)
+    local not_existing_parents = {}
+    for _, parent in ipairs(parents) do
+        local note_path = config.notes_path .. "/" .. parent .. ".md"
+        if vim.fn.filereadable(note_path) == 0 then
+            table.insert(not_existing_parents, parent)
+        end
+    end
+
     if #not_existing_parents > 0 then
         local confirmed = vim.fn.confirm("Notes: [" .. table.concat(not_existing_parents, ", ") .. "] do not exist", "&Yes\n&No", 2)
         if confirmed ~= 1 then
@@ -273,6 +288,7 @@ local function command_open_daily_note()
     vim.fn.setline(8, "")
     vim.fn.setline(9, "## День")
     vim.fn.setline(10, "")
+    vim.cmd("w")
   end
 
   vim.cmd("normal! G")
@@ -289,7 +305,7 @@ end
 
 -- Paste img from clipboard copied as path
 local function command_paste_img()
-  local script_path = vim.fn.expand("~/.dotfiles/bin/_command_paste_img")
+  local script_path = vim.fn.expand("~/.dotfiles/bin/_kb_paste_img")
   local command = "python3 " .. script_path
 
   -- Execute the command and capture the output and error messages

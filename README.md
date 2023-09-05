@@ -36,7 +36,7 @@ require('kb_notes').setup {
   note_post_init = KBPostInit
   -- Optinal: define your own template for new notes
   -- supported variabled {note_name} will be replaced with your name
-  template = '# {note_name}
+  template = '# {note_name}\n\n'
 }
 
 -- Example post init function
